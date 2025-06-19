@@ -1,0 +1,42 @@
+FROM node:22-alpine
+
+WORKDIR /workspace
+
+RUN echo '{\
+  "name": "@leonardozwirtes/nodejs-k8s-operator",\
+  "version": "1.0.0",\
+  "description": "Universal OpenTelemetry instrumentation with http.route labels",\
+  "dependencies": {\
+    "@opentelemetry/api": "^1.9.0",\
+    "@opentelemetry/auto-instrumentations-node": "^0.60.1",\
+    "@opentelemetry/exporter-otlp-http": "^0.26.0",\
+    "@opentelemetry/resources": "^2.0.1",\
+    "@opentelemetry/sdk-node": "^0.202.0",\
+    "@opentelemetry/semantic-conventions": "^1.34.0",\
+    "@opentelemetry/instrumentation-http": "^0.55.0",\
+    "@opentelemetry/instrumentation-express": "^0.43.0",\
+    "@opentelemetry/instrumentation-fastify": "^0.41.0",\
+    "@opentelemetry/instrumentation-koa": "^0.43.0",\
+    "@opentelemetry/instrumentation-graphql": "^0.43.0",\
+    "@fastify/otel": "^0.9.1"\
+  }\
+}' > package.json
+
+RUN npm install --production --no-audit --no-fund
+
+RUN mkdir -p /autoinstrumentation
+
+COPY otel-instrumentation.js /autoinstrumentation/autoinstrumentation.js
+
+RUN cp -r node_modules /autoinstrumentation/
+
+RUN chmod -R +r /autoinstrumentation
+
+RUN echo '#!/bin/sh\n\
+echo "OpenTelemetry Universal Node.js Instrumentation"\n\
+echo "Compatible with: Express, Fastify, Next.js, NestJS, Koa, GraphQL"\n\
+echo "Features: http.route labels in all metrics"\n\
+echo "Ready for deployment with OpenTelemetry Operator"\n\
+' > /autoinstrumentation/info.sh && chmod +x /autoinstrumentation/info.sh
+
+ENTRYPOINT ["/autoinstrumentation/info.sh"]
